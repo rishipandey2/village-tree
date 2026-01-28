@@ -1,10 +1,13 @@
 const CACHE_NAME = 'family-tree-v1';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/style.css',
-  '/index.js',
-  '/data.js'
+  './',
+  './index.html',
+  './style.css',
+  './index.js',
+  './data.js',
+  './manifest.json',
+  './assets/icon-192.png',
+  './assets/icon-512.png'
 ];
 
 // Install service worker and cache files

@@ -2,7 +2,7 @@
   "name": "पांडे परिवार वृक्ष",
   "short_name": "परिवार वृक्ष",
   "description": "गाँव के सभी परिवारों का संपूर्ण वृक्ष",
-  "start_url": "/index.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#000000",
