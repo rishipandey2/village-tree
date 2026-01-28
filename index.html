@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="परिवार वृक्ष">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <style>
+    /* LOADING SCREEN STYLES */
+    #loadingScreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.5s ease, visibility 0.5s ease;
+    }
+    #loadingScreen.fade-out {
+      opacity: 0;
+      visibility: hidden;
+    }
+    .loading-logo {
+      width: 100px;
+      height: 100px;
+      border-radius: 20px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      animation: pulse 1.5s infinite ease-in-out;
+    }
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid black;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+  </style>
+  <title>पांडे परिवार वृक्ष</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- LOADING SCREEN -->
+  <div id="loadingScreen">
+    <img src="assets/icon-192.png" alt="Logo" class="loading-logo">
+    <div class="loading-spinner"></div>
+  </div>
+
+  <!-- HOME PAGE -->
+    <div id="homePage">
+        <h1>पांडे परिवार वृक्ष</h1>
+        <p class="subtitle">गाँव के सभी परिवारों का संपूर्ण वृक्ष</p>
+        <p class="stats" id="familyStats">कुल: 0 सदस्य | 0 पीढ़ियाँ</p>
+        
+        <div class="search-section">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="नाम खोजें...">
+                <button class="clear-search" id="clearSearch">✕</button>
+            </div>
+
+            <div class="search-filters">
+                <button class="filter-btn active" data-filter="all">सभी</button>
+                <button class="filter-btn" data-filter="name">नाम से</button>
+                <button class="filter-btn" data-filter="father">पिता से</button>
+                <button class="filter-btn" data-filter="year">वर्ष से</button>
+            </div>
+
+            <div id="searchResults"></div>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn" onclick="showFullTree()">पूरा वृक्ष देखें</button>
+            <button class="btn btn-secondary" onclick="showGenerationView()">पीढ़ी अनुसार देखें</button>
+            <button class="btn btn-secondary" onclick="showCalculator()">संबंध कैलकुलेटर</button>
+            <button class="btn btn-secondary" style="margin-top: 10px;" onclick="showLineage()">मेरा वंश देखें</button>
+            <button class="btn btn-secondary" style="margin-top: 10px; background: #fce4ec; border-color:black;" onclick="showVillagePage()"> हमारा गाँव</button>
+            <!-- <button class="btn" style="background: #e91e63; margin-top: 10px; width: 100%;" onclick="showAddMember()">+ नया सदस्य जोड़ें</button> -->
+        </div>
+    </div>
+
+    <!-- TREE PAGE -->
+    <div id="treePage">
+        <div class="header">
+            <button class="back-btn" onclick="goHome()">← वापस</button>
+            <div class="header-title" id="treeTitle">परिवार वृक्ष</div>
+            <button class="help-btn" onclick="showHelp()">?</button>
+        </div>
+
+        <div class="mobile-controls">
+            <div class="zoom-controls">
+                <button class="zoom-btn" onclick="zoomOut()">−</button>
+                <span class="zoom-level" id="zoomLevel">100%</span>
+                <button class="zoom-btn" onclick="zoomIn()">+</button>
+            </div>
+            
+            <div class="view-controls">
+                <button class="view-btn active" onclick="toggleView('normal', this)">सामान्य</button>
+                <button class="view-btn" onclick="toggleView('compact', this)">संक्षिप्त</button>
+            </div>
+            
+            <div class="info-text">↔ स्वाइप करें | दो उंगली से ज़ूम करें</div>
+        </div>
+
+        <div class="generation-nav" id="generationNav" style="display: none;"></div>
+
+        <div id="treeContainer">
+            <div class="tree-wrapper" id="treeWrapper">
+                <div class="loading">वृक्ष लोड हो रहा है...</div>
+            </div>
+        </div>
+
+        <div id="personDetails"></div>
+
+        <div class="quick-actions" id="quickActions">
+            <button class="quick-btn" onclick="scrollToTop()" title="ऊपर जाएं">↑</button>
+            <button class="quick-btn" onclick="resetZoom()" title="ज़ूम रीसेट">⊙</button>
+        </div>
+    </div>
+
+    <!-- HELP MODAL -->
+    <div class="modal" id="helpModal">
+        <div class="modal-content">
+            <div class="modal-title">कैसे उपयोग करें</div>
+            
+            <div class="help-item">
+                <div class="help-item-title">🔍 खोजें</div>
+                <div class="help-item-desc">नाम, पिता का नाम, या जन्म वर्ष लिखें। फ़िल्टर बटन से खोज को सीमित करें।</div>
+            </div>
+
+            <div class="help-item">
+                <div class="help-item-title">👆 नोड दबाएं</div>
+                <div class="help-item-desc">किसी भी व्यक्ति के नोड को दबाकर उनकी पूरी जानकारी देखें।</div>
+            </div>
+
+            <div class="help-item">
+                <div class="help-item-title">🔎 ज़ूम करें</div>
+                <div class="help-item-desc">+ और − बटन से या दो उंगलियों से ज़ूम इन/आउट करें।</div>
+            </div>
+
+            <div class="help-item">
+                <div class="help-item-title">📱 संक्षिप्त मोड</div>
+                <div class="help-item-desc">बड़े परिवार को एक स्क्रीन पर देखने के लिए "संक्षिप्त" बटन दबाएं।</div>
+            </div>
+
+            <div class="help-item">
+                <div class="help-item-title">↔️ स्क्रॉल करें</div>
+                <div class="help-item-desc">उंगली से स्वाइप करके वृक्ष को सभी दिशाओं में देखें।</div>
+            </div>
+
+            <button class="close-modal" onclick="closeHelp()">बंद करें</button>
+        </div>
+    </div>
+
+    <!-- ADD MEMBER MODAL -->
+    <div class="modal" id="addMemberModal">
+        <div class="modal-content">
+            <div class="modal-title">नया सदस्य जोड़ें (Instant Add)</div>
+            <div class="calc-form">
+                <div class="calc-input-group">
+                    <label>माता/पिता (Parent)</label>
+                    <div class="autocomplete">
+                        <input type="text" id="addParentInput" placeholder="पिता/माता का नाम खोजें..." autocomplete="off">
+                        <div id="addParentList" class="autocomplete-items"></div>
+                    </div>
+                </div>
+                <div class="calc-input-group">
+                    <label>नाम (हिंदी)</label>
+                    <div class="autocomplete">
+                        <input type="text" id="addNameHi" placeholder="उदा: गरिमा पांडेय" autocomplete="off">
+                        <div id="addNameHiList" class="autocomplete-items"></div>
+                    </div>
+                </div>
+                <div class="calc-input-group">
+                    <label>Name (English)</label>
+                    <div class="autocomplete">
+                        <input type="text" id="addNameEn" placeholder="e.g. Garima Pandey" autocomplete="off">
+                        <div id="addNameEnList" class="autocomplete-items"></div>
+                    </div>
+                </div>
+                <div class="calc-input-group">
+                    <label>जन्म वर्ष (Birth Year)</label>
+                    <input type="number" id="addBirthYear" placeholder="2005">
+                </div>
+                
+                <button class="btn calc-btn" onclick="addMemberToTree()" style="background-color: #2e7d32;">जोड़ें (Add to Tree)</button>
+            </div>
+            <button class="close-modal" onclick="closeAddMember()">बंद करें</button>
+        </div>
+    </div>
+
+    <!-- RELATIONSHIP CALCULATOR MODAL -->
+    <div class="modal" id="calculatorModal">
+        <div class="modal-content">
+            <div class="modal-title">संबंध कैलकुलेटर</div>
+            
+            <div class="calc-form">
+                <div class="calc-input-group">
+                    <label>पहला व्यक्ति</label>
+                    <div class="autocomplete">
+                         <input type="text" id="calcInput1" placeholder="नाम लिखें..." autocomplete="off">
+                         <div id="calcList1" class="autocomplete-items"></div>
+                    </div>
+                </div>
+
+                <div class="calc-input-group">
+                    <label>दूसरा व्यक्ति</label>
+                    <div class="autocomplete">
+                        <input type="text" id="calcInput2" placeholder="नाम लिखें..." autocomplete="off">
+                        <div id="calcList2" class="autocomplete-items"></div>
+                    </div>
+                </div>
+
+                <button class="btn calc-btn" onclick="calculateRelationship()">संबंध देखें</button>
+
+                <div id="calcResult" class="calc-result" style="display: none;">
+                    <div class="relation-text" id="relationText"></div>
+                    <div class="relation-path" id="relationPath"></div>
+                </div>
+            </div>
+
+            <button class="close-modal" onclick="closeCalculator()">बंद करें</button>
+        </div>
+    </div>
+
+    <!-- MY LINEAGE MODAL -->
+    <div class="modal" id="lineageModal">
+        <div class="modal-content">
+            <div class="modal-title"> मेरा वंश (My Lineage)</div>
+            
+            <div class="calc-form">
+                <div class="calc-input-group">
+                    <label>अपना नाम चुनें</label>
+                    <div class="autocomplete">
+                        <input type="text" id="lineageInput" placeholder="अपना नाम लिखें..." autocomplete="off">
+                        <div id="lineageList" class="autocomplete-items"></div>
+                    </div>
+                </div>
+
+                <button class="btn calc-btn" onclick="showMyLineage()">वंश देखें</button>
+
+                <div id="lineageResult" style="display: none;">
+                    <div class="lineage-title" id="lineagePersonName"></div>
+                    <div class="lineage-path" id="lineagePath"></div>
+                </div>
+            </div>
+
+            <button class="close-modal" onclick="closeLineage()">बंद करें</button>
+        </div>
+    </div>
+
+    <!-- VILLAGE INFORMATION PAGE -->
+    <div id="villagePage" class="page-section" style="display: none;">
+        <div class="header">
+            <button class="back-btn" onclick="closeVillagePage()">← वापस</button>
+            <h1 id="villageTitle">हमारा गाँव: पांडे गाँव</h1>
+        </div>
+
+        <div class="village-content">
+            <div class="village-hero" style="background-image: url('assets/village_hero.png')">
+                <div class="village-hero-overlay">
+                    <h2>हमारी जड़ों का गौरव</h2>
+                    <p>हिमालय की गोद में बसा एक सुंदर स्थान</p>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <h3>📜 इतिहास (History)</h3>
+                <p>हमारा गाँव "पांडे गाँव" पीढ़ियों से पांडे परिवार का निवास स्थान रहा है। यहाँ की मिट्टी में हमारे पूर्वजों की कहानियाँ और संस्कृति रची-बसी है। यह गाँव अपनी प्राकृतिक सुंदरता और शांत वातावरण के लिए जाना जाता है।</p>
+            </div>
+
+            <div class="section-card">
+                <h3>🏛 प्रमुख स्थल (Landmarks)</h3>
+                <div class="landmark-grid">
+                    <div class="landmark-card">
+                        <img src="assets/village_temple.png" alt="मंदिर">
+                        <div class="landmark-info">
+                            <h4>कुलदेवता मंदिर</h4>
+                            <p>हमारा प्राचीन मंदिर जहाँ पीढ़ियों से पूजा होती आ रही है।</p>
+                        </div>
+                    </div>
+                    <div class="landmark-card">
+                        <img src="assets/village_school.png" alt="स्कूल">
+                        <div class="landmark-info">
+                            <h4>गाँव का स्कूल</h4>
+                            <p>वह स्थान जहाँ हमारे परिवार के कई सदस्यों ने शिक्षा प्राप्त की।</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <h3>📍 स्थान (Location)</h3>
+                <div class="map-placeholder">
+                    <p>उत्तराखंड की खूबसूरत पहाड़ियों में स्थित</p>
+                    <button class="btn btn-secondary" style="width: auto; padding: 10px 20px;" onclick="window.open('https://www.google.com/maps', '_blank')">Google Maps पर देखें</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="focusBanner" class="focus-banner"><b>फोकस मोड:</b> आपकी शाखा दिखाई जा रही है। वापस जाने के लिए "← वापस" दबाएं।</div>
+
+    <div class="scroll-hint" id="scrollHint">← स्वाइप करके देखें →</div>
+    <script>
+      // Register Service Worker for PWA
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js')
+          .then(reg => console.log('Service Worker registered'))
+          .catch(err => console.log('SW registration failed:', err));
+      }
+    </script>
+   <script src="data.js"></script>
+   <script src="index.js"></script>
+</body>
+</html>
