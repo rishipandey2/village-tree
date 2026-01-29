@@ -328,7 +328,28 @@
           .catch(err => console.log('SW registration failed:', err));
       }
     </script>
+   <div id="assistantFab" class="assistant-fab" onclick="toggleAssistant()" title="AI वंश गाइड">
+       <span>✨</span>
+   </div>
+
+   <div id="assistantWindow" class="assistant-window">
+       <div class="assistant-header">
+           <div class="assistant-title">✨ AI वंश गाइड</div>
+           <button class="assistant-close" onclick="toggleAssistant()">×</button>
+       </div>
+       <div id="assistantMessages" class="assistant-messages">
+           <div class="message assistant">नमस्ते! मैं आपका पांडे परिवार गाइड हूँ। आप मुझसे अपने वंश के बारे में कुछ भी पूछ सकते हैं।</div>
+           <div class="message assistant">उदाहरण: "सबसे बुजुर्ग कौन हैं?", "अगले 100 साल में कितने सदस्य होंगे?", "[Name] के कितने बच्चे हैं?"</div>
+       </div>
+       <div class="assistant-input-area">
+           <button id="micBtn" class="mic-btn" title="आवाज़ से पूछें (Voice Search)">🎤</button>
+           <input type="text" id="assistantInput" placeholder="अपना प्रश्न यहाँ लिखें..." autocomplete="off">
+           <button id="sendAssistantBtn" onclick="handleAssistantQuery()">→</button>
+       </div>
+   </div>
+
    <script src="data.js"></script>
    <script src="index.js"></script>
+   <script src="assistant.js"></script>
 </body>
 </html>

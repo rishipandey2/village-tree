@@ -309,6 +309,33 @@ function showFullTree() {
   }, 500);
 }
 
+// AI Bridge: Show a person on the tree
+function showPersonOnTree(personId) {
+    // 1. Ensure we are in tree view
+    if (document.getElementById("treePage").style.display !== "block") {
+        showFullTree();
+    }
+
+    // 2. Wait for tree to render if it was just triggered
+    setTimeout(() => {
+        const node = document.querySelector(`[data-person-id="${personId}"]`);
+        if (node) {
+            // 3. Scroll to node
+            node.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+
+            // 4. Highlight node temporarily
+            node.style.transition = "outline 0.3s ease";
+            node.style.outline = "4px solid black";
+            setTimeout(() => {
+                node.style.outline = "none";
+            }, 3000);
+
+            // 5. Open details
+            showPersonDetails(personId);
+        }
+    }, 600);
+}
+
 function showGenerationView() {
   document.getElementById("homePage").style.display = "none";
   document.getElementById("treePage").style.display = "block";
