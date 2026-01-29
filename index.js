@@ -87,7 +87,7 @@ function logToUI(msg, isError = false) {
     const statsEl = document.getElementById("familyStats");
     if (statsEl) {
         if (isError) {
-            statsEl.style.color = "red";
+            statsEl.classList.add("error-msg-inline");
             statsEl.textContent = "Error: " + msg;
         } else {
             // Internal log for status tracking
@@ -143,7 +143,7 @@ function startup() {
     // 4. Update UI Stats
     const statsEl = document.getElementById("familyStats");
     if (statsEl && totalMembers > 0) {
-        statsEl.style.color = ""; // Reset color
+        statsEl.classList.remove("error-msg-inline"); // Reset color
         statsEl.textContent = `कुल: ${totalMembers} सदस्य | ${maxGeneration} पीढ़ियाँ`;
     }
 
@@ -578,7 +578,7 @@ function renderPerson(container, person, highlightId) {
 
     person.children.forEach((child) => {
       const childWrapper = document.createElement("div");
-      childWrapper.style.position = "relative";
+      childWrapper.className = "child-wrapper";
 
       const connector = document.createElement("div");
       connector.className = "child-connector";
@@ -864,7 +864,7 @@ function calculateRelationship() {
     const relation = getRelationName(dist1, dist2, calcPerson1, calcPerson2, path1);
 
     resultDiv.style.display = "block";
-    resultText.innerHTML = `<span style="color:black">${calcPerson2.name}</span>, <span style="color:black">${calcPerson1.name}</span> के <span style="color:#e91e63">${relation}</span> हैं।`;
+    resultText.innerHTML = `<span class="calc-person">${calcPerson2.name}</span>, <span class="calc-person">${calcPerson1.name}</span> के <span class="calc-relation">${relation}</span> हैं।`;
     
     resultPath.innerHTML = `साझा पूर्वज: <b>${lca.name}</b><br>
                             पीढ़ी अंतर: ${calcPerson2.generation - calcPerson1.generation}`;
