@@ -294,6 +294,20 @@ function showFullTree() {
   document.getElementById("treePage").style.display = "block";
   document.getElementById("treeTitle").textContent = "संपूर्ण परिवार वृक्ष";
   document.getElementById("quickActions").style.display = "flex";
+  
+  // ADD TOGGLE BUTTON
+  let viewModeBtn = document.getElementById("viewModeBtn");
+  if (!viewModeBtn) {
+      viewModeBtn = document.createElement("button");
+      viewModeBtn.id = "viewModeBtn";
+      viewModeBtn.className = "smart-view-btn";
+      viewModeBtn.innerHTML = isCollapsibleMode 
+          ? '<span class="btn-icon">📋</span> पूरा देखें' 
+          : '<span class="btn-icon">✨</span> स्मार्ट व्यू';
+      viewModeBtn.onclick = toggleCollapsibleMode;
+      document.getElementById("quickActions").appendChild(viewModeBtn);
+  }
+  
   clearFocusMode();
   renderTree(familyData, null);
   showScrollHint();
@@ -677,8 +691,47 @@ function renderTree(rootPerson, highlightId) {
   }
 }
 
+// GLOBAL STATE for Collapsible Tree
+const expandedFamilies = new Set();
+let isFirstRender = true;
+let isCollapsibleMode = false; // Default: Full Tree (as requested)
+
+function toggleFamily(personId) {
+    if (expandedFamilies.has(personId)) {
+        expandedFamilies.delete(personId);
+    } else {
+        expandedFamilies.add(personId);
+    }
+    renderTree(familyData, null); 
+}
+
+function toggleCollapsibleMode() {
+    isCollapsibleMode = !isCollapsibleMode;
+    const btn = document.getElementById("viewModeBtn");
+    if (isCollapsibleMode) {
+        expandedFamilies.clear();
+        if (familyData && familyData.id) expandedFamilies.add(familyData.id);
+        if (btn) {
+            btn.innerHTML = '<span class="btn-icon">📋</span> पूरा देखें';
+            btn.classList.add("active");
+        }
+    } else {
+        if (btn) {
+            btn.innerHTML = '<span class="btn-icon">✨</span> स्मार्ट व्यू';
+            btn.classList.remove("active");
+        }
+    }
+    renderTree(familyData, null);
+}
+
 function renderPerson(container, person, highlightId) {
   lastRenderNodeCount++;
+  
+  if (isCollapsibleMode && isFirstRender && !person.parent) {
+      expandedFamilies.add(person.id);
+      isFirstRender = false;
+  }
+  
   const personDiv = document.createElement("div");
   personDiv.className = "person-group";
 
@@ -691,6 +744,7 @@ function renderPerson(container, person, highlightId) {
   node.onclick = () => showPersonDetails(person.id);
 
   const childCount = person.children ? person.children.length : 0;
+  const isExpanded = expandedFamilies.has(person.id);
 
   const name = person.name || "Unknown";
   const year = person.birthYear || "N/A";
@@ -701,36 +755,66 @@ function renderPerson(container, person, highlightId) {
                 <div class="node-year">जन्म: ${year}</div>
                 <div class="node-gen">पीढ़ी ${gen}</div>
             `;
-
+            
   personDiv.appendChild(node);
 
-  if (person.children && person.children.length > 0) {
+  // If has children, decide whether to show them or a "Collapsed Block"
+  if (childCount > 0) {
+      
+    // 1. Vertical Line Connection
     const verticalLine = document.createElement("div");
     verticalLine.className = "vertical-line";
     personDiv.appendChild(verticalLine);
 
-    const childrenDiv = document.createElement("div");
-    childrenDiv.className = "children-container";
+    // LOGIC: If Collapsible Mode is ON, check expanded state.
+    // If OFF (Full Tree), always expand.
+    const shouldShowChildren = !isCollapsibleMode || isExpanded;
 
-    if (person.children.length > 1) {
-      const horizontalLine = document.createElement("div");
-      horizontalLine.className = "horizontal-line";
-      childrenDiv.appendChild(horizontalLine);
+    if (shouldShowChildren) {
+        // --- EXPANDED / FULL VIEW ---
+        
+        // Show Collapse Toggle ONLY if in Collapsible Mode
+        if (isCollapsibleMode) {
+            const toggleBtn = document.createElement("div");
+            toggleBtn.className = "family-toggle-btn expanded";
+            toggleBtn.innerText = "−"; 
+            toggleBtn.onclick = (e) => { e.stopPropagation(); toggleFamily(person.id); };
+            personDiv.insertBefore(toggleBtn, verticalLine.nextSibling);
+        }
+
+        const childrenDiv = document.createElement("div");
+        childrenDiv.className = "children-container";
+
+        if (person.children.length > 1) {
+            const horizontalLine = document.createElement("div");
+            horizontalLine.className = "horizontal-line";
+            childrenDiv.appendChild(horizontalLine);
+        }
+
+        person.children.forEach((child) => {
+            const childWrapper = document.createElement("div");
+            childWrapper.className = "child-wrapper";
+
+            const connector = document.createElement("div");
+            connector.className = "child-connector";
+            childWrapper.appendChild(connector);
+
+            renderPerson(childWrapper, child, highlightId);
+            childrenDiv.appendChild(childWrapper);
+        });
+
+        personDiv.appendChild(childrenDiv);
+        
+    } else {
+        // --- COLLAPSED VIEW (Only in Collapsible Mode) ---
+        
+        const familyBlock = document.createElement("div");
+        familyBlock.className = "family-block";
+        familyBlock.innerHTML = `परिवार (${childCount}) <span class="arrow">▶</span>`;
+        familyBlock.onclick = (e) => { e.stopPropagation(); toggleFamily(person.id); };
+        
+        personDiv.appendChild(familyBlock);
     }
-
-    person.children.forEach((child) => {
-      const childWrapper = document.createElement("div");
-      childWrapper.className = "child-wrapper";
-
-      const connector = document.createElement("div");
-      connector.className = "child-connector";
-      childWrapper.appendChild(connector);
-
-      renderPerson(childWrapper, child, highlightId);
-      childrenDiv.appendChild(childWrapper);
-    });
-
-    personDiv.appendChild(childrenDiv);
   }
 
   container.appendChild(personDiv);

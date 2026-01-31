@@ -1552,3 +1552,103 @@ input[type="text"]::placeholder {
     display: flex;
     justify-content: center;
 }
+
+/* --- COLLAPSIBLE FAMILY BLOCKS --- */
+.family-block {
+    margin-top: 10px;
+    background: white;
+    border: 1px solid var(--border-color);
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+    color: var(--primary-color);
+    z-index: 5;
+    position: relative;
+}
+
+.family-block:hover {
+    background: #f8f9fa;
+    border-color: #999;
+}
+
+.family-block .arrow {
+    font-size: 0.7rem;
+    color: #666;
+}
+
+.family-toggle-btn {
+    width: 20px;
+    height: 20px;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    cursor: pointer;
+    margin: -10px auto 5px auto; /* Overlap vertical line */
+    position: relative;
+    z-index: 10;
+    color: #666;
+}
+
+.family-toggle-btn:hover {
+    background: #f0f0f0;
+    color: black;
+}
+
+/* --- SMART VIEW FLOATING BUTTON --- */
+.smart-view-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: white;
+    border: none;
+    padding: 14px 24px;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3), 0 0 0 3px rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 1000;
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+
+.smart-view-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(0,0,0,0.4), 0 0 0 3px rgba(255,255,255,0.2);
+}
+
+.smart-view-btn:active {
+    transform: translateY(0);
+}
+
+.smart-view-btn.active {
+    background: linear-gradient(135deg, #0f3460 0%, #1a1a2e 100%);
+}
+
+.smart-view-btn .btn-icon {
+    font-size: 1.1rem;
+}
+
+/* Hide default quick-actions styling when only smart-view-btn is present */
+#quickActions {
+    position: static;
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+}
+
