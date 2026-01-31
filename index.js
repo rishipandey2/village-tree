@@ -68,6 +68,8 @@ let generationMap = {};
 let isVanshMode = false;
 let vanshTargetId = null;
 let vanshRootId = null;
+let vanshBranchRootId = null;
+let vanshAncestryPathIds = new Set();
 let showMarriedDaughters = false;
 
 function indexPerson(person, parent = null) {
@@ -740,7 +742,7 @@ function toggleCollapsibleMode() {
     renderTree(familyData, null);
 }
 
-function renderPerson(container, person, highlightId) {
+function renderPerson(container, person, highlightId, forceShowBranch = false) {
   lastRenderNodeCount++;
   
   if (isCollapsibleMode && isFirstRender && !person.parent) {
@@ -750,13 +752,29 @@ function renderPerson(container, person, highlightId) {
   
   // --- VANSH MODE FILTERING ---
   let childrenToRender = person.children || [];
+  let nextForceShow = forceShowBranch;
+
   if (isVanshMode) {
-      childrenToRender = childrenToRender.filter(child => {
-          const gender = inferGender(child);
-          const isFemale = gender === 'female';
-          if (!isFemale) return true; // Always show sons
-          return showMarriedDaughters; // Show daughters only if toggled
-      });
+      const isOnPath = vanshAncestryPathIds.has(person.id);
+      const isBranchRoot = person.id === vanshBranchRootId;
+
+      if (isOnPath && !isBranchRoot && !forceShowBranch) {
+          // ABOVE BRANCH (Ancestry Chain): Only show the path to the branch
+          childrenToRender = childrenToRender.filter(c => vanshAncestryPathIds.has(c.id));
+          nextForceShow = false;
+      } else if (isBranchRoot || forceShowBranch) {
+          // AT OR BELOW BRANCH: Show all paternal descendants
+          childrenToRender = childrenToRender.filter(child => {
+              const gender = inferGender(child);
+              const isFemale = gender === 'female';
+              if (!isFemale) return true; 
+              return showMarriedDaughters;
+          });
+          nextForceShow = true;
+      } else {
+          // Outside of the Vansh scope (shouldn't happen with correct root selection)
+          return;
+      }
   }
   
   const personDiv = document.createElement("div");
@@ -764,11 +782,17 @@ function renderPerson(container, person, highlightId) {
 
   const node = document.createElement("div");
   node.className = "node";
+  
+  // Style for Ancestry Path (above focus branch)
+  if (isVanshMode && vanshAncestryPathIds.has(person.id) && person.id !== vanshBranchRootId && !forceShowBranch) {
+      node.classList.add("ancestry-path");
+  }
+
   if (person.id === highlightId) {
     node.classList.add("selected");
   }
   if (isVanshMode && person.id === vanshTargetId) {
-    node.classList.add("vansh-target"); // Special highlight for the person who started the search
+    node.classList.add("vansh-target"); 
   }
   node.dataset.personId = person.id;
   node.onclick = () => showPersonDetails(person.id);
@@ -789,7 +813,6 @@ function renderPerson(container, person, highlightId) {
   const isExpanded = expandedFamilies.has(person.id);
 
   if (childCount > 0) {
-    // 1. Vertical Line Connection
     const verticalLine = document.createElement("div");
     verticalLine.className = "vertical-line";
     personDiv.appendChild(verticalLine);
@@ -814,11 +837,8 @@ function renderPerson(container, person, highlightId) {
             }
 
             childrenToRender.forEach((child) => {
-                // IMPORTANT: In Vansh mode, we STOP recursion for daughters 
-                // because their children belong to another vansh.
                 const childGender = inferGender(child);
                 if (isVanshMode && childGender === 'female') {
-                    // Render as leaf
                     const cw = document.createElement("div");
                     cw.className = "child-wrapper";
                     const conn = document.createElement("div");
@@ -832,7 +852,7 @@ function renderPerson(container, person, highlightId) {
                     const connector = document.createElement("div");
                     connector.className = "child-connector";
                     childWrapper.appendChild(connector);
-                    renderPerson(childWrapper, child, highlightId);
+                    renderPerson(childWrapper, child, highlightId, nextForceShow);
                     childrenDiv.appendChild(childWrapper);
                 }
             });
@@ -859,7 +879,7 @@ function renderPerson(container, person, highlightId) {
             if (isVanshMode && childGender === 'female') {
                renderLeafNode(childWrapper, child, highlightId);
             } else {
-               renderPerson(childWrapper, child, highlightId);
+               renderPerson(childWrapper, child, highlightId, nextForceShow);
             }
             childrenDiv.appendChild(childWrapper);
         });
@@ -1474,23 +1494,38 @@ function showMyLineage() {
     showMarriedDaughters = false; // By default hidden
 
     // Find Vansh (Clan) Root
-    // We go up exactly 2 generations (to Grandfather) to capture "Father and his real brothers"
-    // This gives us the "Poora Khandan" (Branch) without the "Whole" village.
-    let curr = lineagePerson;
-    if (curr.parent) curr = curr.parent; // Level 1: Father
-    if (curr.parent) curr = curr.parent; // Level 2: Grandfather (Dada)
-    vanshRootId = curr.id;
+    // 1. Ultimate Root (Vansh Purush - Gaddar Pandey)
+    let ultimate = lineagePerson;
+    while (ultimate.parent) {
+        ultimate = ultimate.parent;
+    }
+    vanshRootId = ultimate.id;
+
+    // 2. Branch Root (Grandfather - capturing Father and real brothers)
+    let branch = lineagePerson;
+    if (branch.parent) branch = branch.parent; // Level 1: Father
+    if (branch.parent) branch = branch.parent; // Level 2: Grandfather
+    vanshBranchRootId = branch.id;
+
+    // 3. Ancestry Path (Ultimate -> ... -> Branch Root)
+    // This is the single line of fathers leading to the branch
+    vanshAncestryPathIds.clear();
+    let pathCurr = branch;
+    while (pathCurr) {
+        vanshAncestryPathIds.add(pathCurr.id);
+        pathCurr = pathCurr.parent;
+    }
 
     // 1. Close modal
     document.getElementById("lineageModal").style.display = "none";
     document.getElementById("vanshControls").style.display = "flex";
-    document.getElementById("vanshInfoBanner").style.display = "flex"; // Show info mandatory first time
+    document.getElementById("vanshInfoBanner").style.display = "flex"; 
     
     // Reset toggle UI
     document.getElementById("daughterToggle").checked = false;
 
-    // 2. Render Full tree from Vansh Purush, but with filtering
-    renderTree(curr, lineagePerson.id);
+    // 2. Render from Ultimate Root, but filtering will happen in renderPerson
+    renderTree(ultimate, lineagePerson.id);
     
     // Switch page
     document.getElementById("homePage").style.display = "none";

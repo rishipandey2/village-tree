@@ -1819,3 +1819,14 @@ input:checked + .slider:before {
     border-style: dotted;
     opacity: 0.9;
 }
+
+.ancestry-path {
+    background: #f8f8f8 !important;
+    border: 1px dashed #ccc !important;
+    opacity: 0.85;
+}
+
+.node-gen {
+    font-weight: 700;
+    color: #1a1a2e;
+}
