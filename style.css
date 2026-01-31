@@ -244,14 +244,14 @@ input[type="text"]::placeholder {
             min-height: 100vh;
         }
 
-        .header {
+.header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 16px 24px;
     border-bottom: 1px solid var(--border-soft);
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.95);
+    /* backdrop-filter: blur(10px); REMOVED to prevent visual glitches */
     position: sticky;
     top: 0;
     z-index: 100;
@@ -1467,4 +1467,88 @@ input[type="text"]::placeholder {
         left: 16px;
         bottom: 84px;
     }
+}
+
+/* --- FOCUS PERSON TREE VIEW --- */
+.focus-container {
+    display: flex;
+    flex-direction: column-reverse; /* Bottom-Up: GP at bottom, Children at top */
+    align-items: center;
+    padding: 40px 20px; /* Space for scrolling */
+    min-height: 100%;
+    animation: fadeIn 0.5s ease;
+}
+
+.focus-banner {
+    position: fixed;
+    top: 60px; /* Below standard header */
+    left: 0;
+    right: 0;
+    bottom: auto; /* Ensure it doesn't stretch to bottom */
+    background: black;
+    color: white;
+    text-align: center;
+    padding: 8px;
+    font-size: 0.85rem;
+    z-index: 90; /* Below header (100) but above content */
+    display: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.focus-generation-row {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    position: relative;
+    z-index: 1; /* Nodes above lines */
+}
+
+.focus-main-row {
+    margin: 10px 0;
+}
+
+.focus-connector-vertical {
+    width: 2px;
+    height: 40px;
+    background: var(--border-color);
+    margin: 0 auto;
+    flex-shrink: 0;
+}
+
+.focus-node-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.focus-node {
+    border-width: 3px;
+    border-color: black;
+    transform: scale(1.1);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    background: #fff;
+    z-index: 2;
+}
+
+.tree-focus-active .focus-node {
+    background: #000;
+    color: #fff;
+    border-color: #000;
+    transform: scale(1.15); /* Slight pop */
+}
+
+/* Ensure inner text is readable */
+.tree-focus-active .focus-node .node-name,
+.tree-focus-active .focus-node .node-year {
+    color: #fff;
+}
+
+.tree-focus-active {
+    display: flex;
+    justify-content: center;
 }

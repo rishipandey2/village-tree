@@ -380,32 +380,147 @@ function filterByGeneration(gen, btn) {
 }
 
 function showPersonTree(personId) {
-  const person = personIndex[personId];
-  if (!person) return;
-
-  document.getElementById("homePage").style.display = "none";
-  document.getElementById("treePage").style.display = "block";
-  document.getElementById("treeTitle").textContent = person.name;
-  document.getElementById("quickActions").style.display = "flex";
-
-  let root = person;
-  while (root.parent) {
-    root = root.parent;
-  }
-
-  renderTree(root, personId);
-
-  setTimeout(() => {
-    const selectedNode = document.querySelector(".node.selected");
-    if (selectedNode) {
-      selectedNode.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-        inline: "center",
-      });
-    }
-  }, 300);
+  // Use Focus View by default as per user preference
+  showFocusView(personId);
 }
+
+function showFocusView(personId) {
+    const person = personIndex[personId];
+    if (!person) return;
+
+    document.getElementById("homePage").style.display = "none";
+    document.getElementById("treePage").style.display = "block";
+    document.getElementById("treeTitle").textContent = person.name; 
+    document.getElementById("quickActions").style.display = "flex";
+    
+    document.getElementById("focusBanner").style.display = "block";
+    document.getElementById("treeContainer").classList.add("tree-focus-active");
+
+    const wrapper = document.getElementById("treeWrapper");
+    wrapper.innerHTML = '';
+    
+    const focusContainer = document.createElement("div");
+    focusContainer.className = "focus-container";
+    
+    // DATA GATHERING
+    let grandparents = [];
+    if (person.parent && person.parent.parent) {
+        grandparents.push(person.parent.parent);
+    }
+    
+    let parents = [];
+    if (person.parent) {
+        parents.push(person.parent);
+    }
+
+    let siblings = [];
+    if (person.parent && person.parent.children) {
+        siblings = person.parent.children;
+    } else {
+        siblings = [person]; 
+    }
+
+    // RENDER LAYERS (Bottom-Up)
+    if (grandparents.length > 0) {
+        const row = document.createElement("div");
+        row.className = "focus-generation-row";
+        grandparents.forEach(gp => row.appendChild(renderFocusNode(gp, "grandparent")));
+        focusContainer.appendChild(row);
+        
+        const conn = document.createElement("div");
+        conn.className = "focus-connector-vertical";
+        focusContainer.appendChild(conn);
+    }
+    
+    if (parents.length > 0) {
+         const row = document.createElement("div");
+        row.className = "focus-generation-row";
+        parents.forEach(p => row.appendChild(renderFocusNode(p, "parent")));
+        focusContainer.appendChild(row);
+        
+         const conn = document.createElement("div");
+        conn.className = "focus-connector-vertical";
+        focusContainer.appendChild(conn);
+    }
+    
+    // Focus Row (Contains Siblings + Focus Person with Nested Children)
+    const focusRow = document.createElement("div");
+    focusRow.className = "focus-generation-row focus-main-row";
+    focusRow.style.alignItems = "flex-end"; // Align siblings to bottom (lineage)
+    
+    siblings.forEach(sib => {
+        if (sib.id === person.id) {
+            // FOCUS PERSON WRAPPER
+            // We nest children here so the line comes ONLY from this person
+            const wrapper = document.createElement("div");
+            wrapper.style.display = "flex";
+            wrapper.style.flexDirection = "column-reverse"; // Bottom-Up: Person at bottom, Children up
+            wrapper.style.alignItems = "center";
+            
+            // 1. The Person Node
+            wrapper.appendChild(renderFocusNode(sib, "focus"));
+            
+            // 2. Children (if any)
+            if (person.children && person.children.length > 0) {
+                const conn = document.createElement("div");
+                conn.className = "focus-connector-vertical";
+                wrapper.appendChild(conn);
+                
+                const childRow = document.createElement("div");
+                childRow.className = "focus-generation-row";
+                person.children.forEach(c => childRow.appendChild(renderFocusNode(c, "child")));
+                wrapper.appendChild(childRow);
+            }
+            
+            focusRow.appendChild(wrapper);
+        } else {
+            // Sibling Node
+            focusRow.appendChild(renderFocusNode(sib, "sibling"));
+        }
+    });
+    
+    focusContainer.appendChild(focusRow);
+    
+    wrapper.appendChild(focusContainer);
+    
+     setTimeout(() => {
+        const focusNode = document.querySelector(".node.focus-node");
+        if (focusNode) {
+            focusNode.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+        }
+    }, 100);
+}
+
+function renderFocusNode(person, type) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "focus-node-wrapper";
+    
+    const node = document.createElement("div");
+    node.className = "node " + (type === "focus" ? "focus-node selected" : "focus-sibling");
+    node.dataset.personId = person.id;
+    
+    // FORCE RESET OPACITY & EVENTS
+    node.style.opacity = "1";
+    node.style.pointerEvents = "auto";
+    
+    node.onclick = (e) => {
+        e.stopPropagation(); // Prevent bubbling issues
+        showFocusView(person.id);
+    };
+    
+    const name = person.name || "Unknown";
+    const year = person.birthYear || "";
+    
+    node.innerHTML = `
+        <div class="node-name">${name}</div>
+        <div class="node-year">${year}</div>
+    `;
+    
+    wrapper.appendChild(node);
+    return wrapper;
+}
+
+
 
 function goHome() {
   document.getElementById("homePage").style.display = "flex";
@@ -1198,7 +1313,7 @@ function showMyLineage() {
     if (!lineagePerson) {
         const inputVal = document.getElementById("lineageInput").value.trim();
         if (inputVal) {
-            lineagePerson = findPersonByName(inputVal);
+            lineagePerson = Object.values(personIndex).find(p => p.name === inputVal || p.nameEn === inputVal);
         }
     }
 
@@ -1210,29 +1325,8 @@ function showMyLineage() {
     // 1. Close modal
     document.getElementById("lineageModal").style.display = "none";
     
-    // 2. Open tree view and title it
-    document.getElementById("homePage").style.display = "none";
-    document.getElementById("treePage").style.display = "block";
-    document.getElementById("treeTitle").textContent = lineagePerson.name + " की शाखा";
-    document.getElementById("quickActions").style.display = "flex";
-
-    // 3. Render full tree (starting from root)
-    renderTree(familyData, lineagePerson.id);
-
-    // 4. Apply Focus
-    setTimeout(() => {
-        focusOnLineage(lineagePerson.id);
-        
-        // 5. Scroll to selection
-        const selectedNode = document.querySelector(".node.selected");
-        if (selectedNode) {
-            selectedNode.scrollIntoView({
-                behavior: "smooth",
-                block: "center",
-                inline: "center",
-            });
-        }
-    }, 300);
+    // 2. Use the new Focus View
+    showFocusView(lineagePerson.id);
 }
 
 
