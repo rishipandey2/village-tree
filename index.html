@@ -127,6 +127,31 @@
 
         <div id="personDetails"></div>
 
+        <div id="vanshControls" class="vansh-controls" style="display: none;">
+            <div class="vansh-toggle-group">
+                <label class="switch">
+                    <input type="checkbox" id="daughterToggle" onchange="toggleDaughters(this.checked)">
+                    <span class="slider round"></span>
+                </label>
+                <span class="toggle-label">विवाहित बेटियाँ दिखाएं</span>
+            </div>
+            <div class="vansh-info-badge" onclick="toggleVanshInfo()">ⓘ कौन-कौन शामिल है?</div>
+        </div>
+
+        <div id="vanshInfoBanner" class="vansh-info-banner" style="display: none;">
+            <div class="vansh-info-content">
+                <h4>🧬 वंश-खानदान (Poora Khandan)</h4>
+                <p>इस दृश्य में "वंश पुरुष" से शुरू होकर नीचे की पूरी वंशावली दिखाई जाती है:</p>
+                <ul>
+                    <li>✅ सभी पुत्र और उनकी वंशावली</li>
+                    <li>✅ भाइयों का परिवार (ताऊ, चाचा शाखा)</li>
+                    <li>✅ अविवाहित बेटियाँ</li>
+                    <li>✅ विवाहित बेटियाँ (ऊपर दिए गए बटन से चालू करें)</li>
+                </ul>
+                <button class="btn btn-tiny" onclick="toggleVanshInfo()">ठीक है</button>
+            </div>
+        </div>
+
         <div class="quick-actions" id="quickActions">
             <!-- Smart View button is added dynamically by JS -->
         </div>

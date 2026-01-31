@@ -64,6 +64,12 @@ let totalMembers = 0;
 let maxGeneration = 0;
 let generationMap = {};
 
+// VANSH MODE STATE
+let isVanshMode = false;
+let vanshTargetId = null;
+let vanshRootId = null;
+let showMarriedDaughters = false;
+
 function indexPerson(person, parent = null) {
   if (!person || !person.id) return;
   // Create a new object with the parent reference
@@ -280,6 +286,8 @@ function displaySearchResults(results) {
 }
 
 function showFullTree() {
+  isVanshMode = false;
+  document.getElementById("vanshControls").style.display = "none";
   if (!familyData || !familyData.id) {
       console.log("Attempting emergency re-build...");
       startup(); 
@@ -351,6 +359,8 @@ function showPersonOnTree(personId) {
 }
 
 function showGenerationView() {
+  isVanshMode = false;
+  document.getElementById("vanshControls").style.display = "none";
   document.getElementById("homePage").style.display = "none";
   document.getElementById("treePage").style.display = "block";
   document.getElementById("treeTitle").textContent = "पीढ़ी अनुसार";
@@ -399,6 +409,8 @@ function showPersonTree(personId) {
 }
 
 function showFocusView(personId) {
+    isVanshMode = false;
+    document.getElementById("vanshControls").style.display = "none";
     const person = personIndex[personId];
     if (!person) return;
 
@@ -543,6 +555,12 @@ function goHome() {
   clearBtn.style.display = "none";
   document.getElementById("personDetails").style.display = "none";
   document.getElementById("quickActions").style.display = "none";
+  
+  // Vansh cleanup
+  isVanshMode = false;
+  document.getElementById("vanshControls").style.display = "none";
+  document.getElementById("vanshInfoBanner").style.display = "none";
+
   currentZoom = 1;
   clearFocusMode();
 }
@@ -730,6 +748,17 @@ function renderPerson(container, person, highlightId) {
       isFirstRender = false;
   }
   
+  // --- VANSH MODE FILTERING ---
+  let childrenToRender = person.children || [];
+  if (isVanshMode) {
+      childrenToRender = childrenToRender.filter(child => {
+          const gender = inferGender(child);
+          const isFemale = gender === 'female';
+          if (!isFemale) return true; // Always show sons
+          return showMarriedDaughters; // Show daughters only if toggled
+      });
+  }
+  
   const personDiv = document.createElement("div");
   personDiv.className = "person-group";
 
@@ -738,11 +767,11 @@ function renderPerson(container, person, highlightId) {
   if (person.id === highlightId) {
     node.classList.add("selected");
   }
+  if (isVanshMode && person.id === vanshTargetId) {
+    node.classList.add("vansh-target"); // Special highlight for the person who started the search
+  }
   node.dataset.personId = person.id;
   node.onclick = () => showPersonDetails(person.id);
-
-  const childCount = person.children ? person.children.length : 0;
-  const isExpanded = expandedFamilies.has(person.id);
 
   const name = person.name || "Unknown";
   const year = person.birthYear || "N/A";
@@ -756,82 +785,101 @@ function renderPerson(container, person, highlightId) {
             
   personDiv.appendChild(node);
 
-  // If has children, decide whether to show them or a "Collapsed Block"
+  const childCount = childrenToRender.length;
+  const isExpanded = expandedFamilies.has(person.id);
+
   if (childCount > 0) {
-      
     // 1. Vertical Line Connection
     const verticalLine = document.createElement("div");
     verticalLine.className = "vertical-line";
     personDiv.appendChild(verticalLine);
 
-    // LOGIC: If Collapsible Mode is ON, check expanded state.
-    // If OFF (Full Tree), always expand.
     const shouldShowChildren = !isCollapsibleMode || isExpanded;
 
     if (isCollapsibleMode) {
-        // --- SMART VIEW: Always show Family Block ---
-        
         const familyBlock = document.createElement("div");
         familyBlock.className = "family-block" + (isExpanded ? " expanded" : "");
-        familyBlock.innerHTML = `Family · ${childCount} children`;
+        familyBlock.innerHTML = `Family · ${childCount} members`;
         familyBlock.onclick = (e) => { e.stopPropagation(); toggleFamily(person.id); };
         personDiv.appendChild(familyBlock);
         
         if (shouldShowChildren) {
-            // Children appear ABOVE the family block (in DOM order for column-reverse)
             const childrenDiv = document.createElement("div");
             childrenDiv.className = "children-container";
 
-            if (person.children.length > 1) {
+            if (childCount > 1) {
                 const horizontalLine = document.createElement("div");
                 horizontalLine.className = "horizontal-line";
                 childrenDiv.appendChild(horizontalLine);
             }
 
-            person.children.forEach((child) => {
-                const childWrapper = document.createElement("div");
-                childWrapper.className = "child-wrapper";
-
-                const connector = document.createElement("div");
-                connector.className = "child-connector";
-                childWrapper.appendChild(connector);
-
-                renderPerson(childWrapper, child, highlightId);
-                childrenDiv.appendChild(childWrapper);
+            childrenToRender.forEach((child) => {
+                // IMPORTANT: In Vansh mode, we STOP recursion for daughters 
+                // because their children belong to another vansh.
+                const childGender = inferGender(child);
+                if (isVanshMode && childGender === 'female') {
+                    // Render as leaf
+                    const cw = document.createElement("div");
+                    cw.className = "child-wrapper";
+                    const conn = document.createElement("div");
+                    conn.className = "child-connector";
+                    cw.appendChild(conn);
+                    renderLeafNode(cw, child, highlightId);
+                    childrenDiv.appendChild(cw);
+                } else {
+                    const childWrapper = document.createElement("div");
+                    childWrapper.className = "child-wrapper";
+                    const connector = document.createElement("div");
+                    connector.className = "child-connector";
+                    childWrapper.appendChild(connector);
+                    renderPerson(childWrapper, child, highlightId);
+                    childrenDiv.appendChild(childWrapper);
+                }
             });
-
             personDiv.appendChild(childrenDiv);
         }
-        
     } else {
-        // --- FULL TREE VIEW: Standard recursive render ---
-        
         const childrenDiv = document.createElement("div");
         childrenDiv.className = "children-container";
 
-        if (person.children.length > 1) {
+        if (childCount > 1) {
             const horizontalLine = document.createElement("div");
             horizontalLine.className = "horizontal-line";
             childrenDiv.appendChild(horizontalLine);
         }
 
-        person.children.forEach((child) => {
+        childrenToRender.forEach((child) => {
+            const childGender = inferGender(child);
             const childWrapper = document.createElement("div");
             childWrapper.className = "child-wrapper";
-
             const connector = document.createElement("div");
             connector.className = "child-connector";
             childWrapper.appendChild(connector);
 
-            renderPerson(childWrapper, child, highlightId);
+            if (isVanshMode && childGender === 'female') {
+               renderLeafNode(childWrapper, child, highlightId);
+            } else {
+               renderPerson(childWrapper, child, highlightId);
+            }
             childrenDiv.appendChild(childWrapper);
         });
-
         personDiv.appendChild(childrenDiv);
     }
   }
-
+  
   container.appendChild(personDiv);
+}
+
+function renderLeafNode(container, person, highlightId) {
+    const node = document.createElement("div");
+    node.className = "node leaf-node";
+    if (person.id === highlightId) node.classList.add("selected");
+    node.onclick = () => showPersonDetails(person.id);
+    node.innerHTML = `
+        <div class="node-name">${person.name}</div>
+        <div class="node-year">${person.birthYear || ''}</div>
+    `;
+    container.appendChild(node);
 }
 
 function showPersonDetails(personId) {
@@ -1420,11 +1468,54 @@ function showMyLineage() {
         return;
     }
 
+    // --- CLAN VIEW (POORA KHANDAN) LOGIC ---
+    isVanshMode = true;
+    vanshTargetId = lineagePerson.id;
+    showMarriedDaughters = false; // By default hidden
+
+    // Find Vansh (Clan) Root
+    // We go up exactly 2 generations (to Grandfather) to capture "Father and his real brothers"
+    // This gives us the "Poora Khandan" (Branch) without the "Whole" village.
+    let curr = lineagePerson;
+    if (curr.parent) curr = curr.parent; // Level 1: Father
+    if (curr.parent) curr = curr.parent; // Level 2: Grandfather (Dada)
+    vanshRootId = curr.id;
+
     // 1. Close modal
     document.getElementById("lineageModal").style.display = "none";
+    document.getElementById("vanshControls").style.display = "flex";
+    document.getElementById("vanshInfoBanner").style.display = "flex"; // Show info mandatory first time
     
-    // 2. Use the new Focus View
-    showFocusView(lineagePerson.id);
+    // Reset toggle UI
+    document.getElementById("daughterToggle").checked = false;
+
+    // 2. Render Full tree from Vansh Purush, but with filtering
+    renderTree(curr, lineagePerson.id);
+    
+    // Switch page
+    document.getElementById("homePage").style.display = "none";
+    document.getElementById("treePage").style.display = "block";
+    document.getElementById("treeTitle").textContent = "वंश-खानदान (Poora Khandan)";
+}
+
+function toggleDaughters(checked) {
+    showMarriedDaughters = checked;
+    const root = personIndex[vanshRootId];
+    renderTree(root, vanshTargetId);
+}
+
+function toggleVanshInfo() {
+    const banner = document.getElementById("vanshInfoBanner");
+    banner.style.display = banner.style.display === "none" ? "flex" : "none";
+}
+
+function exitVanshMode() {
+    isVanshMode = false;
+    vanshTargetId = null;
+    vanshRootId = null;
+    document.getElementById("vanshControls").style.display = "none";
+    document.getElementById("vanshInfoBanner").style.display = "none";
+    goHome();
 }
 
 

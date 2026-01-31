@@ -1659,4 +1659,163 @@ input[type="text"]::placeholder {
     padding: 0;
 }
 
+/* --- VANSH MODE CONTROLS --- */
+.vansh-controls {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 90%;
+    max-width: 400px;
+}
 
+.vansh-toggle-group {
+    background: white;
+    padding: 8px 16px;
+    border-radius: 30px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid #eee;
+}
+
+.toggle-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.vansh-info-badge {
+    background: #f0f0f0;
+    font-size: 0.75rem;
+    padding: 4px 12px;
+    border-radius: 12px;
+    color: #666;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.vansh-info-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+}
+
+.vansh-info-content {
+    background: white;
+    padding: 30px;
+    border-radius: 20px;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    text-align: left;
+}
+
+.vansh-info-content h4 {
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+    color: #1a1a2e;
+}
+
+.vansh-info-content p {
+    font-size: 0.95rem;
+    color: #444;
+    margin-bottom: 15px;
+}
+
+.vansh-info-content ul {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 20px;
+}
+
+.vansh-info-content li {
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-tiny {
+    padding: 6px 20px;
+    font-size: 0.85rem;
+}
+
+/* --- TOGGLE SWITCH --- */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: #1a1a2e;
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+.vansh-target {
+    border: 3px solid #ffd700 !important;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5) !important;
+}
+
+.leaf-node {
+    background: #fdfdfd;
+    border-style: dotted;
+    opacity: 0.9;
+}
