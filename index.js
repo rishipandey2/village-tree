@@ -534,8 +534,6 @@ function renderFocusNode(person, type) {
     return wrapper;
 }
 
-
-
 function goHome() {
   document.getElementById("homePage").style.display = "flex";
   document.getElementById("treePage").style.display = "none";
